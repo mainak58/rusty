@@ -1,5 +1,5 @@
-use backend::create_router;
 use backend::db::pool::create_pool;
+use backend::routes::app::create_app;
 use dotenvy::dotenv;
 use std::env;
 
@@ -13,13 +13,12 @@ async fn main() {
   let pool = create_pool().await;
   println!("✅ Connected to Postgres!");
 
-  let app = create_router(pool);
-
+  let app = create_app(pool);
   let listener = tokio::net::TcpListener::bind(&addr)
     .await
-    .expect("❌ Failed to bind port");
+    .expect("Failed to listen to port");
 
-  println!("🚀 Server running at http://localhost:{port}");
+  println!("Server running at http://localhost:{port}");
 
-  axum::serve(listener, app).await.expect("❌ Server error");
+  axum::serve(listener, app).await.expect("Server error");
 }
