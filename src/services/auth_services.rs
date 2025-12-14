@@ -2,7 +2,9 @@ use crate::dto::auth::create_user_dto::CreateUserDto;
 use crate::repos::auth_repo;
 use sqlx::PgPool;
 
-pub async fn create_user(pool: &PgPool, payload: CreateUserDto) -> Result<(), sqlx::Error> {
+pub async fn create_user(pool: &PgPool, payload: &CreateUserDto) -> Result<(), sqlx::Error> {
+  tracing::debug!("{:#?}", payload);
+
   if payload.name.trim().is_empty() {
     return Err(sqlx::Error::Protocol("Name cannot be empty".into()));
   }
@@ -15,6 +17,10 @@ pub async fn create_user(pool: &PgPool, payload: CreateUserDto) -> Result<(), sq
 
   if payload.password.trim().is_empty() {
     return Err(sqlx::Error::Protocol("Password cannot be empty".into()));
+  }
+
+  if auth_repo::check_user_exist(pool, payload).await? {
+    return Err(sqlx::Error::Protocol("User already exists".into()));
   }
 
   auth_repo::insert_user(pool, payload).await?;
