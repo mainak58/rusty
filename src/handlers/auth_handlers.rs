@@ -15,3 +15,4 @@ pub async fn create_user(
     Err(_) => (StatusCode::BAD_REQUEST, "Failed to create user"),
   }
 }
+
