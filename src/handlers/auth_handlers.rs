@@ -25,7 +25,7 @@ pub async fn create_user(
 ) -> impl IntoResponse {
   match auth_services::create_user(&pool, &payload).await {
     Ok(_) => {
-      let response = UserResponseDto {
+      let response: UserResponseDto = UserResponseDto {
         name: payload.name,
         email: payload.email,
         phone: payload.phone,
@@ -51,11 +51,11 @@ pub async fn login_user(
   State(pool): State<PgPool>,
   Json(payload): Json<LoginDto>,
 ) -> impl IntoResponse {
-  let jwt_secret = std::env::var("jwt_secret").unwrap_or_else(|_| "default_secret".to_string());
+  let jwt_secret: String = std::env::var("jwt_secret").unwrap_or_else(|_| "default_secret".to_string());
 
   match auth_services::login_user(&pool, &payload).await {
     Ok(Some(user)) => {
-      let token = create_jwt(&user, &jwt_secret).unwrap();
+      let token: String = create_jwt(&user, &jwt_secret).unwrap();
       (StatusCode::OK, Json(json!({ "token": token })))
     }
     Ok(None) => (
