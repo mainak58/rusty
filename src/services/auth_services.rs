@@ -1,10 +1,10 @@
 use crate::dto::auth::create_user_dto::CreateUserDto;
-use crate::repos::auth_repo;
+use crate::dto::auth::login_user_dto::{LoginDto, LoginIdentifier};
+use crate::dto::auth::user_dto::UserDto;
+use crate::repos::auth_repo::{self, find_user};
 use sqlx::PgPool;
 
 pub async fn create_user(pool: &PgPool, payload: &CreateUserDto) -> Result<(), sqlx::Error> {
-  tracing::debug!("{:#?}", payload);
-
   if payload.name.trim().is_empty() {
     return Err(sqlx::Error::Protocol("Name cannot be empty".into()));
   }
@@ -26,4 +26,50 @@ pub async fn create_user(pool: &PgPool, payload: &CreateUserDto) -> Result<(), s
   auth_repo::insert_user(pool, payload).await?;
 
   Ok(())
+}
+
+pub fn resolve_identifier(dto: &UserDto) -> anyhow::Result<LoginIdentifier<'_>> {
+  if let Some(email) = &dto.email {
+    return Ok(LoginIdentifier::Email(email));
+  }
+
+  if let Some(phone) = &dto.phone {
+    return Ok(LoginIdentifier::Phone(phone));
+  }
+
+  Err(anyhow::anyhow!("No login identifier provided"))
+}
+
+// pub async fn login_user(
+//   pool: &PgPool,
+//   // identifier: LoginIdentifier<'_>,
+//   // password: &str,
+//   payload: &UserDto,
+// ) -> anyhow::Result<Option<UserDto>> {
+//   // let user = find_user(pool, identifier).await?;
+//   let user = find_user(pool).await?;
+
+//   if let Some(u) = user {
+//     if u.password == &payload.password {
+//       Ok(Some(u))
+//     } else {
+//       Ok(None)
+//     }
+//   } else {
+//     Ok(None)
+//   }
+// }
+
+pub async fn login_user(pool: &PgPool, payload: &LoginDto) -> anyhow::Result<Option<UserDto>> {
+  let user = find_user(pool, payload).await?;
+
+  if let Some(u) = user {
+    if u.password == payload.password {
+      Ok(Some(u))
+    } else {
+      Ok(None)
+    }
+  } else {
+    Ok(None)
+  }
 }
